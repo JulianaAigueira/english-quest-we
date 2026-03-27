@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>English Quest Web</title>
+    <style>
+        body { background-color: #1e1e2e; color: #cdd6f4; font-family: sans-serif; text-align: center; padding: 50px; }
+        .game-box { background-color: #313244; padding: 40px; border-radius: 15px; display: inline-block; border: 2px solid #45475a; }
+        h1 { color: #89b4fa; }
+        .word { color: #f9e2af; font-size: 2em; font-weight: bold; text-transform: uppercase; margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn { background-color: #a6e3a1; color: #11111b; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-mic { background-color: #f38ba8; color: #11111b; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        .btn-audio { background: none; border: none; font-size: 1.2em; cursor: pointer; transition: 0.2s; }
+        .btn-audio:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body>
+    <div class="game-box">
+        <h1>🎮 English Quest</h1>
+
+        {% if message %}
+            <div style="background-color: #45475a; padding: 15px; border-radius: 5px; margin-bottom: 15px; color: #a6e3a1; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                {{ message }}
+                {% if failed_word %}
+                    <button type="button" class="btn-audio" onclick="speakEnglish('{{ failed_word }}')" title="Ouvir a palavra novamente">🔊</button>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <p>Traduza escrevendo, ou clique em Falar para treinar a pronúncia:</p>
+
+        <div class="word">
+            {{ word }}
+            <button type="button" class="btn-audio" onclick="speakEnglish('{{ word }}')" title="Ouvir pronúncia">🔊</button>
+        </div>
+
+        <form method="POST" id="game_form">
+            {% csrf_token %}
+            <input type="hidden" name="answer_type" id="answer_type" value="text">
+
+            <input type="text" name="user_answer" id="answer_box" placeholder="Sua tradução aqui..." autocomplete="off" autofocus required
+                   style="padding: 10px; border-radius: 5px; border: none; width: 350px;">
+
+            <button type="submit" class="btn">Enviar</button>
+            <button type="button" class="btn-mic" onclick="startMicrophone()" id="btn_mic">🎤 Falar</button>
+        </form>
+
+        <div style="margin-top: 20px;">
+            <strong>XP:</strong> {{ xp }} | <strong>Vidas:</strong> {{ lives }}
+        </div>
+    </div>
+
+    <script>
+        // 1. Motor do Alto-falante
+        function speakEnglish(text) {
+            let synth = window.speechSynthesis;
+            let utterThis = new SpeechSynthesisUtterance(text);
+            utterThis.lang = 'en-US';
+            utterThis.rate = 0.9;
+            synth.speak(utterThis);
+        }
+
+        // 2. Motor do Microfone
+        function startMicrophone() {
+            let SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognitionAPI) {
+                alert("Seu navegador não suporta o microfone. Tente usar o Google Chrome!");
+                return;
+            }
+
+            let recognition = new SpeechRecognitionAPI();
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                document.getElementById('btn_mic').innerHTML = "🔴 Gravando...";
+                document.getElementById('answer_box').placeholder = "Fale agora...";
+            };
+
+            recognition.onspeechend = function() {
+                recognition.stop();
+            };
+
+            recognition.onresult = function(event) {
+                let spoken_text = event.results[0][0].transcript;
+
+                document.getElementById('answer_box').value = spoken_text;
+                document.getElementById('answer_type').value = "voice";
+                document.getElementById('game_form').submit();
+            };
+
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
