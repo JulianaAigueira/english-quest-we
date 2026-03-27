@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-p&vtbvp2$8#_u2s9ni^-m&9ju3o@ryaq_avnpkol^5-osz*90e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://english-quest-we.onrender.com']
 
 
 # Application definition
