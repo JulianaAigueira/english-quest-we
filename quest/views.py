@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 import requests
 import random
 from deep_translator import GoogleTranslator
+from .models import VisitorCount
 
 
 class TranslatorAPI:
@@ -11,6 +12,15 @@ class TranslatorAPI:
 
 
 def index(request):
+    # Pega o contador do banco de dados (ou cria se for o visitante nº 1)
+    visitor_counter, created = VisitorCount.objects.get_or_create(id=1)
+
+    # Se a pessoa ainda não tem o selo de visita nesta sessão, conta +1!
+    if not request.session.get('has_visited'):
+        visitor_counter.total_visitors += 1
+        visitor_counter.save()
+        request.session['has_visited'] = True
+
     translator = TranslatorAPI()
 
     vocabulary = [
@@ -43,6 +53,11 @@ def index(request):
                 xp_gained = 25 if " " in current_word else 15
                 request.session['xp'] += xp_gained
                 request.session['message'] = f"🌟 UAU! Pronúncia perfeita! Você disse '{user_answer}'. +{xp_gained} XP"
+                # Verifica se ganhou vida extra
+                previous_xp = request.session['xp'] - xp_gained
+                if (request.session['xp'] // 100) > (previous_xp // 100):
+                    request.session['lives'] += 1
+                    request.session['message'] += " 💖 +1 Vida Extra!"
             else:
                 request.session['lives'] -= 1
                 request.session['message'] = f"❌ Quase! Eu entendi '{user_answer}', mas a palavra era '{current_word}'."
@@ -56,6 +71,11 @@ def index(request):
                 request.session['xp'] += xp_gained
                 request.session[
                     'message'] = f"✨ Acertou! '{current_word}' significa '{correct_translation}'. +{xp_gained} XP"
+                # Verifica se ganhou vida extra
+                previous_xp = request.session['xp'] - xp_gained
+                if (request.session['xp'] // 100) > (previous_xp // 100):
+                    request.session['lives'] += 1
+                    request.session['message'] += " 💖 +1 Vida Extra!"
             else:
                 request.session['lives'] -= 1
                 request.session['message'] = f"❌ Ops! A tradução de '{current_word}' era: '{correct_translation}'"
@@ -79,7 +99,12 @@ def index(request):
         'xp': request.session['xp'],
         'lives': request.session['lives'],
         'message': message,
-        'failed_word': failed_word
+        'failed_word': failed_word,
+        'total_visitors': visitor_counter.total_visitors
     }
+
+
+
+
 
     return render(request, 'index.html', context)
