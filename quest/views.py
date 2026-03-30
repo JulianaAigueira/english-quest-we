@@ -1,14 +1,13 @@
 from django.shortcuts import render, redirect
 import requests
 import random
+from deep_translator import GoogleTranslator
 
 
 class TranslatorAPI:
     def get_translation(self, text):
-        url = f"https://api.mymemory.translated.net/get?q={text}&langpair=en|pt"
-        response = requests.get(url)
-        data = response.json()
-        return data['responseData']['translatedText'].strip().lower()
+        translated_text = GoogleTranslator(source='en', target='pt').translate(text)
+        return translated_text.strip().lower()
 
 
 def index(request):
